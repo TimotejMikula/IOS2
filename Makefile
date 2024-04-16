@@ -1,11 +1,9 @@
 CC = gcc
-CFLAGS = -std=gnu99 -Wall -Wextra -Werror -pedantic
+CFLAGS = -std=gnu99 -Wall -Wextra -Werror -pedantic -pthread
+OUTPUT = proj2
 
-all: proj2
-
-proj2: proj2.c
-	$(CC) $(CFLAGS) -o $@ $^
+build: proj2.c proj2.h
+	$(CC) $(CFLAGS) proj2.c -o $(OUTPUT)
 
 clean:
-	rm -f your_target_name
-
+	rm -f $(OUTPUT)
