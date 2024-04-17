@@ -24,6 +24,7 @@
 
 sem_t *mutex_output;
 sem_t *mutex_bus_stop;
+sem_t *mutex_queue_update;
 Bus_Stop busstop1;
 Bus_Stop busstop2;
 Bus_Stop busstop3;
@@ -153,7 +154,6 @@ void skibus(Arg args)
 
 void skier_busstop(int id, Arg args, int idz)
 {
-    // int rand_busstop = random_int(1, args.Z);
     wait_sem(&mutex_queue_update);
     if (idz == 1)
         (*(busstop1.count))++;
@@ -186,6 +186,7 @@ void skier_busstop(int id, Arg args, int idz)
         (*(busstop10.count))++;
 
     post_sem(&mutex_queue_update);
+    skier_waiting_on_bus_stop(id, busstop)
 }
 
 void skier(Arg args, int id, int idz)
@@ -301,6 +302,7 @@ void destroy_sem(sem_t **sem)
 void cleanup_semaphores(void)
 {
     destroy_sem(&mutex_output);
+    destroy_sem(&mutex_queue_update);
 
     if (munmap(action_id, sizeof(int)) == -1)
     {
