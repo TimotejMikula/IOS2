@@ -24,7 +24,16 @@
 
 sem_t *mutex_output;
 sem_t *mutex_bus_stop;
-Service nameofservice;
+Bus_Stop busstop1;
+Bus_Stop busstop2;
+Bus_Stop busstop3;
+Bus_Stop busstop4;
+Bus_Stop busstop5;
+Bus_Stop busstop6;
+Bus_Stop busstop7;
+Bus_Stop busstop8;
+Bus_Stop busstop9;
+Bus_Stop busstop10;
 FILE *file;
 bool *post_open;
 int *action_id;
@@ -66,6 +75,50 @@ void exit_error(char *msg, int errcode)
     exit(errcode);
 }
 
+void skier_waiting_on_bus_stop(int id, int busstop) {
+    
+    if (busstop == 1) {
+        wait_sem(&(busstop1.queue));
+        output(L_ARRIVED_TO, id, busstop);
+    }
+    else if (busstop == 2) {
+        wait_sem(&(busstop1.queue));
+        output(L_ARRIVED_TO, id, busstop);
+    }
+    else if (busstop == 3) {
+        wait_sem(&(busstop1.queue));
+        output(L_ARRIVED_TO, id, busstop);
+    }
+    else if (busstop == 4) {
+        wait_sem(&(busstop1.queue));
+        output(L_ARRIVED_TO, id, busstop);
+    }
+    else if (busstop == 5) {
+        wait_sem(&(busstop1.queue));
+        output(L_ARRIVED_TO, id, busstop);
+    }
+    else if (busstop == 6) {
+        wait_sem(&(busstop1.queue));
+        output(L_ARRIVED_TO, id, busstop);
+    }
+    else if (busstop == 7) {
+        wait_sem(&(busstop1.queue));
+        output(L_ARRIVED_TO, id, busstop);
+    }
+    else if (busstop == 8) {
+        wait_sem(&(busstop1.queue));
+        output(L_ARRIVED_TO, id, busstop);
+    }
+    else if (busstop == 9) {
+        wait_sem(&(busstop1.queue));
+        output(L_ARRIVED_TO, id, busstop);
+    }
+    else if (busstop == 10) {
+        wait_sem(&(busstop1.queue));
+        output(L_ARRIVED_TO, id, busstop);
+    }
+}
+
 int isInteger(char *str)
 {
     int length = strlen(str);
@@ -92,9 +145,7 @@ void skier(Arg args, int id)
 {
     output(L_STARTED, id, NONE);
     usleep_random_in_range(0, args.TL);
-    output(L_ARRIVED_TO, id, NONE);
-
-    //
+    //skier_arrived_to_busstop();
 }
 
 void skier_going_to_ski(int id)
