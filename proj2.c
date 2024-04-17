@@ -22,7 +22,8 @@
 #include <semaphore.h>
 #include "proj2.h"
 
-sem_t *nameofsemaphore;
+sem_t *mutex_output;
+sem_t *mutex_bus_stop;
 Service nameofservice;
 FILE *file;
 bool *post_open;
@@ -32,7 +33,6 @@ int seed;
 Arg ParseArgs(int argc, char *const argv[])
 {
     Arg args;
-    char *str;
 
     if (argc != 6)
     {
@@ -79,9 +79,41 @@ int isInteger(char *str)
     return 1;
 }
 
-void skibus(Arg args) {}
+void skibus(Arg args)
+{
+    output(BUS_STARTED, NONE, NONE);
+    usleep_random_in_range(0, args.TB);
+    output(BUS_ARRIVED_TO, NONE, NONE);
+    wait_sem(&mutex_bus_stop);
+    output(BUS_LEAVING, NONE, NONE);
+}
 
-void skier(Arg args, int id) {}
+void skier(Arg args, int id)
+{
+    output(L_STARTED, id, NONE);
+    usleep_random_in_range(0, args.TL);
+    output(L_ARRIVED_TO, id, NONE);
+
+    //
+}
+
+void skier_going_to_ski(int id)
+{
+    output(L_GOING_TO_SKI, id, NONE);
+    exit(0);
+}
+
+void init_semaphores(void)
+{
+
+    action_id = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+    if (action_id == MAP_FAILED)
+    {
+        exit_error("Mmap failed.", 1);
+    }
+
+    *action_id = 0;
+}
 
 void wait_sem(sem_t **sem)
 {
@@ -105,8 +137,6 @@ void init_sem(sem_t **sem, int value)
         exit_error("Init sem failed.", 1);
 }
 
-void init_semaphores() {}
-
 void destroy_sem(sem_t **sem)
 {
     if (sem_destroy(*sem) == -1)
@@ -116,7 +146,15 @@ void destroy_sem(sem_t **sem)
         exit_error("Munmap sem failed.", 1);
 }
 
-void cleanup_semaphores() {}
+void cleanup_semaphores(void)
+{
+    destroy_sem(&mutex_output);
+
+    if (munmap(action_id, sizeof(int)) == -1)
+    {
+        exit_error("Munmap sem failed.\n", 1);
+    }
+}
 
 int random_int(int lower, int upper)
 {
@@ -128,14 +166,14 @@ int random_int(int lower, int upper)
     // generate random integer in the range <lower, upper>
     return randn;
 }
+
 void usleep_random_in_range(int lower, int upper)
 {
     int rand_n = random_int(lower, upper);
-    // usleep
     usleep(rand_n);
 }
 
-void clear_and_open_output_file()
+void clear_and_open_output_file(void)
 {
     // Clear the output file.
 
@@ -157,7 +195,49 @@ void clear_and_open_output_file()
     }
 }
 
-void output(int action_type, int id, int service) {}
+void output(int action_type, int id, int service)
+{
+    wait_sem(&mutex_output);
+    *action_id += 1;
+    switch (action_type)
+    {
+    case BUS_STARTED:
+        fprintf(file, "%d: BUS: started\n", *action_id);
+        break;
+    case BUS_ARRIVED_TO:
+        fprintf(file, "%d: Z %d: going home\n", *action_id, id);
+        break;
+    case BUS_LEAVING:
+        fprintf(file, "%d: Z %d: entering office for a service %d\n", *action_id, id, service);
+        break;
+    case BUS_ARRIVED_TO_FINAL:
+        fprintf(file, "%d: Z %d: called by office worker\n", *action_id, id);
+        break;
+        // postman
+    case BUS_LEAVING_FINAL:
+        fprintf(file, "%d: U %d: started\n", *action_id, id);
+        break;
+    case BUS_FINISH:
+        fprintf(file, "%d: U %d: serving a service of type %d\n", *action_id, id, service);
+        break;
+    case L_STARTED:
+        fprintf(file, "%d: U %d: service finished\n", *action_id, id);
+        break;
+    case L_ARRIVED_TO:
+        fprintf(file, "%d: U %d: taking break\n", *action_id, id);
+        break;
+    case L_BOARDING:
+        fprintf(file, "%d: U %d: break finished\n", *action_id, id);
+        break;
+    case L_GOING_TO_SKI:
+        fprintf(file, "%d: U %d: going home\n", *action_id, id);
+        break;
+    default:
+        exit_error("Internal error: Unknown output action_type.", 1);
+    }
+
+    post_sem(&mutex_output);
+}
 
 int main(int argc, char **argv)
 {
@@ -168,7 +248,11 @@ int main(int argc, char **argv)
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
 
-    skibus(args);
+    pid_t skibus = fork();
+    if (skibus < 0)
+    {
+        exit_error("skibus fork error\n", 1);
+    }
 
     for (int i = 1; i < args.L + 1; i++)
     {
@@ -178,13 +262,13 @@ int main(int argc, char **argv)
 
         if (skier_id == 0)
         {
-            output(U_STARTED, i, NONE);
+            output(BUS_STARTED, i, NONE);
             skier(args, i);
         }
     }
 
-    usleep_random_in_range((int)args.L / 2, args.L);
-    change_post_status();
+    // usleep_random_in_range((int)args.L / 2, args.L);
+    // change_post_status();
 
     while (wait(NULL) > 0)
         ;

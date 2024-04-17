@@ -16,19 +16,17 @@
 
 #define ANY -1
 #define NONE 0
-#define Z_STARTED 1
-#define Z_GOING_HOME 2
-#define Z_ENTERING_OFFICE 3
-#define Z_CALLED_BY_WORKER 4
+#define BUS_STARTED 1
+#define BUS_ARRIVED_TO 2
+#define BUS_LEAVING 3
+#define BUS_ARRIVED_TO_FINAL 4
+#define BUS_LEAVING_FINAL 5
+#define BUS_FINISH 6
 
-#define U_STARTED 5
-#define U_SERVING_SERVICE 6
-#define U_SERVICE_FINISHED 7
-#define U_BREAK 8
-#define U_BREAK_FINISHED 9
-#define U_GOING_HOME 10
-#define CLOSING 11
-#define DEBUG 12
+#define L_STARTED 7
+#define L_ARRIVED_TO 8
+#define L_BOARDING 9
+#define L_GOING_TO_SKI 10
 
 typedef struct
 {
@@ -54,11 +52,12 @@ void skier(Arg args, int id);
 void wait_sem(sem_t **sem);
 void post_sem(sem_t **sem);
 void init_sem(sem_t **sem, int value);
-void init_semaphores();
+void init_semaphores(void);
 void destroy_sem(sem_t **sem);
-void cleanup_semaphores();
+void cleanup_semaphores(void);
+void usleep_random_in_range(int lower, int upper);
 
-void clear_and_open_output_file();
+void clear_and_open_output_file(void);
 void output(int action_type, int id, int service);
 
 #endif
