@@ -48,7 +48,7 @@ void exit_error(char *msg, int errcode);
 void skier_waiting_on_bus_stop(int id, int Bus_Stop);
 int isInteger(char *str);
 void skibus(Arg args);
-void skier(Arg args, int id);
+void skier(Arg args, int id, int idz);
 
 void wait_sem(sem_t **sem);
 void post_sem(sem_t **sem);

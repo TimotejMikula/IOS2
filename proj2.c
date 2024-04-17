@@ -75,45 +75,55 @@ void exit_error(char *msg, int errcode)
     exit(errcode);
 }
 
-void skier_waiting_on_bus_stop(int id, int busstop) {
-    
-    if (busstop == 1) {
+void skier_waiting_on_bus_stop(int id, int busstop)
+{
+    if (busstop == 1)
+    {
         wait_sem(&(busstop1.queue));
         output(L_ARRIVED_TO, id, busstop);
     }
-    else if (busstop == 2) {
+    else if (busstop == 2)
+    {
         wait_sem(&(busstop1.queue));
         output(L_ARRIVED_TO, id, busstop);
     }
-    else if (busstop == 3) {
+    else if (busstop == 3)
+    {
         wait_sem(&(busstop1.queue));
         output(L_ARRIVED_TO, id, busstop);
     }
-    else if (busstop == 4) {
+    else if (busstop == 4)
+    {
         wait_sem(&(busstop1.queue));
         output(L_ARRIVED_TO, id, busstop);
     }
-    else if (busstop == 5) {
+    else if (busstop == 5)
+    {
         wait_sem(&(busstop1.queue));
         output(L_ARRIVED_TO, id, busstop);
     }
-    else if (busstop == 6) {
+    else if (busstop == 6)
+    {
         wait_sem(&(busstop1.queue));
         output(L_ARRIVED_TO, id, busstop);
     }
-    else if (busstop == 7) {
+    else if (busstop == 7)
+    {
         wait_sem(&(busstop1.queue));
         output(L_ARRIVED_TO, id, busstop);
     }
-    else if (busstop == 8) {
+    else if (busstop == 8)
+    {
         wait_sem(&(busstop1.queue));
         output(L_ARRIVED_TO, id, busstop);
     }
-    else if (busstop == 9) {
+    else if (busstop == 9)
+    {
         wait_sem(&(busstop1.queue));
         output(L_ARRIVED_TO, id, busstop);
     }
-    else if (busstop == 10) {
+    else if (busstop == 10)
+    {
         wait_sem(&(busstop1.queue));
         output(L_ARRIVED_TO, id, busstop);
     }
@@ -141,11 +151,102 @@ void skibus(Arg args)
     output(BUS_LEAVING, NONE, NONE);
 }
 
-void skier(Arg args, int id)
+void skier_busstop(int id, Arg args, int idz)
+{
+    // int rand_busstop = random_int(1, args.Z);
+    wait_sem(&mutex_queue_update);
+    if (idz == 1)
+        (*(busstop1.count))++;
+
+    if (idz == 2)
+        (*(busstop2.count))++;
+
+    if (idz == 3)
+        (*(busstop3.count))++;
+
+    if (idz == 4)
+        (*(busstop4.count))++;
+
+    if (idz == 5)
+        (*(busstop5.count))++;
+
+    if (idz == 6)
+        (*(busstop6.count))++;
+
+    if (idz == 7)
+        (*(busstop7.count))++;
+
+    if (idz == 8)
+        (*(busstop8.count))++;
+
+    if (idz == 9)
+        (*(busstop9.count))++;
+
+    if (idz == 10)
+        (*(busstop10.count))++;
+
+    post_sem(&mutex_queue_update);
+}
+
+void skier(Arg args, int id, int idz)
 {
     output(L_STARTED, id, NONE);
     usleep_random_in_range(0, args.TL);
-    //skier_arrived_to_busstop();
+    skier_busstop(id, args, idz);
+}
+
+bool check_any_skier(int busstop)
+{
+    bool result = true;
+
+    if (busstop == ANY)
+    {
+        if (*(busstop1.count) == 0 && *(busstop2.count) == 0 && *(busstop3.count) == 0 && *(busstop4.count) == 0 && *(busstop5.count) == 0 && *(busstop6.count) == 0 && *(busstop7.count) == 0 && *(busstop8.count) == 0 && *(busstop9.count) == 0 && *(busstop10.count) == 0)
+        {
+            result = false;
+        }
+    }
+    else if (busstop == 1 && *(busstop1.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 2 && *(busstop2.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 3 && *(busstop3.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 3 && *(busstop4.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 3 && *(busstop5.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 3 && *(busstop6.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 3 && *(busstop7.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 3 && *(busstop8.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 3 && *(busstop9.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 3 && *(busstop10.count) == 0)
+    {
+        result = false;
+    }
+    return result;
 }
 
 void skier_going_to_ski(int id)
@@ -304,22 +405,23 @@ int main(int argc, char **argv)
     {
         exit_error("skibus fork error\n", 1);
     }
+    if (skibus == 0)
+    {
+        output(BUS_STARTED, NONE, NONE);
+    }
 
     for (int i = 1; i < args.L + 1; i++)
     {
         pid_t skier_id = fork();
+        int rand_busstop = random_int(1, args.Z);
         if (skier_id < 0)
             exit_error("Fork skier failed.", 1);
 
         if (skier_id == 0)
         {
-            output(BUS_STARTED, i, NONE);
-            skier(args, i);
+            skier(args, i, rand_busstop);
         }
     }
-
-    // usleep_random_in_range((int)args.L / 2, args.L);
-    // change_post_status();
 
     while (wait(NULL) > 0)
         ;
