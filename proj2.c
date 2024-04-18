@@ -92,18 +92,39 @@ int isInteger(char *str)
 void skibus(Arg args)
 {
     output(BUS_STARTED, NONE, NONE);
-    // for (int i = 1; i <= args.Z; i++)
-    // {
-    //     usleep_random_in_range(0, args.TB);
-    //     output(BUS_ARRIVED_TO, NONE, i);
-    //     wait_sem(&mutex_bus_stop);
-    //     // if (bus_at_stop(i))
-    //     // {
-    //     //     //
-    //     // }
-    //     output(BUS_LEAVING, NONE, i);
-    // }
+    for (int i = 1; i <= args.Z; i++)
+    {
+        usleep_random_in_range(0, args.TB);
+        if (i == args.Z)
+        {
+            output(BUS_ARRIVED_TO_FINAL, NONE, NONE);
+            // wait_sem(&mutex_bus_stop);
+            output(BUS_LEAVING_FINAL, NONE, NONE);
+
+            if (!skiers_at_stop(ANY))
+            {
+                i = 1;
+            }
+        }
+        else
+        {
+            output(BUS_ARRIVED_TO, NONE, i);
+            // wait_sem(&mutex_bus_stop);
+            // if (skiers_at_stop(i))
+            // {
+            //     skiers_boarding(i);
+            // }
+            output(BUS_LEAVING, NONE, i);
+        }
+    }
+    output(BUS_FINISH, NONE, NONE);
     exit(0);
+}
+
+void skiers_boarding(int idz)
+{
+
+    post_sem(&mutex_bus_stop);
 }
 
 void skier_busstop(int id, int idz)
@@ -179,10 +200,10 @@ void skier_busstop(int id, int idz)
         output(L_ARRIVED_TO, id, idz);
     }
     post_sem(&mutex_queue_update);
-    bus_at_stop(idz);
+    skiers_at_stop(idz);
 }
 
-bool bus_at_stop(int busstop)
+bool skiers_at_stop(int busstop)
 {
     bool result = true;
 
@@ -241,7 +262,7 @@ void skier(Arg args, int id, int idz)
 {
     output(L_STARTED, id, NONE);
     usleep_random_in_range(0, args.TL);
-    // skier_busstop(id, idz);
+    skier_busstop(id, idz);
     exit(0);
 }
 
@@ -479,6 +500,7 @@ void output(int action_type, int id, int busstop)
     *action_id += 1;
     switch (action_type)
     {
+        // bus
     case BUS_STARTED:
         fprintf(file, "%d: BUS: started\n", *action_id);
         break;
@@ -491,13 +513,13 @@ void output(int action_type, int id, int busstop)
     case BUS_ARRIVED_TO_FINAL:
         fprintf(file, "%d: BUS: arrived to final\n", *action_id);
         break;
-        // postman
     case BUS_LEAVING_FINAL:
         fprintf(file, "%d: BUS: leaving final\n", *action_id);
         break;
     case BUS_FINISH:
         fprintf(file, "%d: BUS: finish\n", *action_id);
         break;
+        // skier
     case L_STARTED:
         fprintf(file, "%d: L %d: started\n", *action_id, id);
         break;
@@ -533,7 +555,7 @@ int main(int argc, char **argv)
     }
     if (skibus_id == 0)
     {
-        output(BUS_STARTED, NONE, NONE);
+        skibus(args);
     }
 
     for (int i = 1; i <= args.L; i++)

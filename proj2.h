@@ -49,7 +49,8 @@ int isInteger(char *str);
 void skibus(Arg args);
 void skier(Arg args, int id, int idz);
 void skier_busstop(int id, int idz);
-bool bus_at_stop(int idz);
+bool skiers_at_stop(int idz);
+void skiers_boarding(int idz);
 
 void wait_sem(sem_t **sem);
 void post_sem(sem_t **sem);
