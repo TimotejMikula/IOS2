@@ -103,7 +103,7 @@ void skibus(Arg args)
 
             if (!check_any_skier(ANY))
             {
-                i = 1;
+                i = 0;
             }
         }
         else
@@ -133,74 +133,74 @@ void skier_busstop(int id, int idz)
     if (idz == 1)
     {
         (*(busstop1.count))++;
-        wait_sem(&(busstop1.queue));
+        // wait_sem(&(busstop1.queue));
         output(L_ARRIVED_TO, id, idz);
     }
 
     if (idz == 2)
     {
         (*(busstop2.count))++;
-        wait_sem(&(busstop2.queue));
+        // wait_sem(&(busstop2.queue));
         output(L_ARRIVED_TO, id, idz);
     }
 
     if (idz == 3)
     {
         (*(busstop3.count))++;
-        wait_sem(&(busstop3.queue));
+        // wait_sem(&(busstop3.queue));
         output(L_ARRIVED_TO, id, idz);
     }
 
     if (idz == 4)
     {
         (*(busstop4.count))++;
-        wait_sem(&(busstop4.queue));
+        // wait_sem(&(busstop4.queue));
         output(L_ARRIVED_TO, id, idz);
     }
 
     if (idz == 5)
     {
         (*(busstop5.count))++;
-        wait_sem(&(busstop5.queue));
+        // wait_sem(&(busstop5.queue));
         output(L_ARRIVED_TO, id, idz);
     }
 
     if (idz == 6)
     {
         (*(busstop6.count))++;
-        wait_sem(&(busstop6.queue));
+        // wait_sem(&(busstop6.queue));
         output(L_ARRIVED_TO, id, idz);
     }
 
     if (idz == 7)
     {
         (*(busstop7.count))++;
-        wait_sem(&(busstop7.queue));
+        // wait_sem(&(busstop7.queue));
         output(L_ARRIVED_TO, id, idz);
     }
 
     if (idz == 8)
     {
         (*(busstop8.count))++;
-        wait_sem(&(busstop8.queue));
+        // wait_sem(&(busstop8.queue));
         output(L_ARRIVED_TO, id, idz);
     }
 
     if (idz == 9)
     {
         (*(busstop9.count))++;
-        wait_sem(&(busstop9.queue));
+        // wait_sem(&(busstop9.queue));
         output(L_ARRIVED_TO, id, idz);
     }
 
     if (idz == 10)
     {
         (*(busstop10.count))++;
-        wait_sem(&(busstop10.queue));
+        // wait_sem(&(busstop10.queue));
         output(L_ARRIVED_TO, id, idz);
     }
     post_sem(&mutex_queue_update);
-    check_any_skier(idz);
+    // check_any_skier(idz);
 }
 
 void skier(Arg args, int id, int idz)
@@ -515,13 +515,13 @@ void output(int action_type, int id, int busstop)
         fprintf(file, "%d: L %d: started\n", *action_id, id);
         break;
     case L_ARRIVED_TO:
-        fprintf(file, "%d: U %d: arrived to %d\n", *action_id, id, busstop);
+        fprintf(file, "%d: L %d: arrived to %d\n", *action_id, id, busstop);
         break;
     case L_BOARDING:
-        fprintf(file, "%d: U %d: boarding\n", *action_id, id);
+        fprintf(file, "%d: L %d: boarding\n", *action_id, id);
         break;
     case L_GOING_TO_SKI:
-        fprintf(file, "%d: U %d: going to ski\n", *action_id, id);
+        fprintf(file, "%d: L %d: going to ski\n", *action_id, id);
         break;
     default:
         exit_error("Internal error: Unknown output action_type.", 1);
