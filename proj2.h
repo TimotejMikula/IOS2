@@ -45,10 +45,11 @@ typedef struct
 
 Arg ParseArgs(int argc, char *const argv[]);
 void exit_error(char *msg, int errcode);
-void skier_waiting_on_bus_stop(int id, int Bus_Stop);
 int isInteger(char *str);
 void skibus(Arg args);
 void skier(Arg args, int id, int idz);
+void skier_busstop(int id, int idz);
+bool bus_at_stop(int idz);
 
 void wait_sem(sem_t **sem);
 void post_sem(sem_t **sem);
@@ -59,6 +60,6 @@ void cleanup_semaphores(void);
 void usleep_random_in_range(int lower, int upper);
 
 void clear_and_open_output_file(void);
-void output(int action_type, int id, int BusStop);
+void output(int action_type, int id, int busstop);
 
 #endif

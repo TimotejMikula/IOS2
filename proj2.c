@@ -76,60 +76,6 @@ void exit_error(char *msg, int errcode)
     exit(errcode);
 }
 
-void skier_waiting_on_bus_stop(int id, int busstop)
-{
-    if (busstop == 1)
-    {
-        wait_sem(&(busstop1.queue));
-        output(L_ARRIVED_TO, id, busstop);
-    }
-    else if (busstop == 2)
-    {
-        wait_sem(&(busstop1.queue));
-        output(L_ARRIVED_TO, id, busstop);
-    }
-    else if (busstop == 3)
-    {
-        wait_sem(&(busstop1.queue));
-        output(L_ARRIVED_TO, id, busstop);
-    }
-    else if (busstop == 4)
-    {
-        wait_sem(&(busstop1.queue));
-        output(L_ARRIVED_TO, id, busstop);
-    }
-    else if (busstop == 5)
-    {
-        wait_sem(&(busstop1.queue));
-        output(L_ARRIVED_TO, id, busstop);
-    }
-    else if (busstop == 6)
-    {
-        wait_sem(&(busstop1.queue));
-        output(L_ARRIVED_TO, id, busstop);
-    }
-    else if (busstop == 7)
-    {
-        wait_sem(&(busstop1.queue));
-        output(L_ARRIVED_TO, id, busstop);
-    }
-    else if (busstop == 8)
-    {
-        wait_sem(&(busstop1.queue));
-        output(L_ARRIVED_TO, id, busstop);
-    }
-    else if (busstop == 9)
-    {
-        wait_sem(&(busstop1.queue));
-        output(L_ARRIVED_TO, id, busstop);
-    }
-    else if (busstop == 10)
-    {
-        wait_sem(&(busstop1.queue));
-        output(L_ARRIVED_TO, id, busstop);
-    }
-}
-
 int isInteger(char *str)
 {
     int length = strlen(str);
@@ -146,54 +92,157 @@ int isInteger(char *str)
 void skibus(Arg args)
 {
     output(BUS_STARTED, NONE, NONE);
-    usleep_random_in_range(0, args.TB);
-    output(BUS_ARRIVED_TO, NONE, NONE);
-    wait_sem(&mutex_bus_stop);
-    output(BUS_LEAVING, NONE, NONE);
+    // for (int i = 1; i <= args.Z; i++)
+    // {
+    //     usleep_random_in_range(0, args.TB);
+    //     output(BUS_ARRIVED_TO, NONE, i);
+    //     wait_sem(&mutex_bus_stop);
+    //     // if (bus_at_stop(i))
+    //     // {
+    //     //     //
+    //     // }
+    //     output(BUS_LEAVING, NONE, i);
+    // }
+    exit(0);
 }
 
 void skier_busstop(int id, int idz)
 {
     wait_sem(&mutex_queue_update);
     if (idz == 1)
+    {
         (*(busstop1.count))++;
+        wait_sem(&(busstop1.queue));
+        output(L_ARRIVED_TO, id, idz);
+    }
 
     if (idz == 2)
+    {
         (*(busstop2.count))++;
+        wait_sem(&(busstop2.queue));
+        output(L_ARRIVED_TO, id, idz);
+    }
 
     if (idz == 3)
+    {
         (*(busstop3.count))++;
+        wait_sem(&(busstop3.queue));
+        output(L_ARRIVED_TO, id, idz);
+    }
 
     if (idz == 4)
+    {
         (*(busstop4.count))++;
+        wait_sem(&(busstop4.queue));
+        output(L_ARRIVED_TO, id, idz);
+    }
 
     if (idz == 5)
+    {
         (*(busstop5.count))++;
+        wait_sem(&(busstop5.queue));
+        output(L_ARRIVED_TO, id, idz);
+    }
 
     if (idz == 6)
+    {
         (*(busstop6.count))++;
+        wait_sem(&(busstop6.queue));
+        output(L_ARRIVED_TO, id, idz);
+    }
 
     if (idz == 7)
+    {
         (*(busstop7.count))++;
+        wait_sem(&(busstop7.queue));
+        output(L_ARRIVED_TO, id, idz);
+    }
 
     if (idz == 8)
+    {
         (*(busstop8.count))++;
+        wait_sem(&(busstop8.queue));
+        output(L_ARRIVED_TO, id, idz);
+    }
 
     if (idz == 9)
+    {
         (*(busstop9.count))++;
+        wait_sem(&(busstop9.queue));
+        output(L_ARRIVED_TO, id, idz);
+    }
 
     if (idz == 10)
+    {
         (*(busstop10.count))++;
-
+        wait_sem(&(busstop10.queue));
+        output(L_ARRIVED_TO, id, idz);
+    }
     post_sem(&mutex_queue_update);
-    skier_waiting_on_bus_stop(id, idz);
+    bus_at_stop(idz);
+}
+
+bool bus_at_stop(int busstop)
+{
+    bool result = true;
+
+    if (busstop == ANY)
+    {
+        if (*(busstop1.count) == 0 && *(busstop2.count) == 0 && *(busstop3.count) == 0 && *(busstop4.count) == 0 && *(busstop5.count) == 0 && *(busstop6.count) == 0 && *(busstop7.count) == 0 && *(busstop8.count) == 0 && *(busstop9.count) == 0 && *(busstop10.count) == 0)
+        {
+            result = false;
+        }
+    }
+    else if (busstop == 1 && *(busstop1.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 2 && *(busstop2.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 3 && *(busstop3.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 4 && *(busstop4.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 5 && *(busstop5.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 6 && *(busstop6.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 7 && *(busstop7.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 8 && *(busstop8.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 9 && *(busstop9.count) == 0)
+    {
+        result = false;
+    }
+    else if (busstop == 10 && *(busstop10.count) == 0)
+    {
+        result = false;
+    }
+
+    return result;
 }
 
 void skier(Arg args, int id, int idz)
 {
     output(L_STARTED, id, NONE);
     usleep_random_in_range(0, args.TL);
-    skier_busstop(id, idz);
+    // skier_busstop(id, idz);
+    exit(0);
 }
 
 bool check_any_skier(int busstop)
@@ -424,7 +473,7 @@ void clear_and_open_output_file(void)
     }
 }
 
-void output(int action_type, int id, int service)
+void output(int action_type, int id, int busstop)
 {
     wait_sem(&mutex_output);
     *action_id += 1;
@@ -434,32 +483,32 @@ void output(int action_type, int id, int service)
         fprintf(file, "%d: BUS: started\n", *action_id);
         break;
     case BUS_ARRIVED_TO:
-        fprintf(file, "%d: BUS: arrived to %d\n", *action_id, id, service);
+        fprintf(file, "%d: BUS: arrived to %d\n", *action_id, busstop);
         break;
     case BUS_LEAVING:
-        fprintf(file, "%d: BUS: entering office for a service %d\n", *action_id, id, service);
+        fprintf(file, "%d: BUS: leaving %d\n", *action_id, busstop);
         break;
     case BUS_ARRIVED_TO_FINAL:
-        fprintf(file, "%d: Z %d: called by office worker\n", *action_id, id);
+        fprintf(file, "%d: BUS: arrived to final\n", *action_id);
         break;
         // postman
     case BUS_LEAVING_FINAL:
-        fprintf(file, "%d: U %d: started\n", *action_id, id);
+        fprintf(file, "%d: BUS: leaving final\n", *action_id);
         break;
     case BUS_FINISH:
-        fprintf(file, "%d: U %d: serving a service of type %d\n", *action_id, id, service);
+        fprintf(file, "%d: BUS: finish\n", *action_id);
         break;
     case L_STARTED:
         fprintf(file, "%d: L %d: started\n", *action_id, id);
         break;
     case L_ARRIVED_TO:
-        fprintf(file, "%d: U %d: taking break\n", *action_id, id);
+        fprintf(file, "%d: U %d: arrived to %d\n", *action_id, id, busstop);
         break;
     case L_BOARDING:
-        fprintf(file, "%d: U %d: break finished\n", *action_id, id);
+        fprintf(file, "%d: U %d: boarding\n", *action_id, id);
         break;
     case L_GOING_TO_SKI:
-        fprintf(file, "%d: U %d: going home\n", *action_id, id);
+        fprintf(file, "%d: U %d: going to ski\n", *action_id, id);
         break;
     default:
         exit_error("Internal error: Unknown output action_type.", 1);
@@ -477,33 +526,33 @@ int main(int argc, char **argv)
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
 
-    pid_t skibus = fork();
-    if (skibus < 0)
+    pid_t skibus_id = fork();
+    if (skibus_id < 0)
     {
         exit_error("skibus fork error\n", 1);
     }
-    if (skibus == 0)
+    if (skibus_id == 0)
     {
         output(BUS_STARTED, NONE, NONE);
     }
 
-    for (int i = 1; i < args.L + 1; i++)
+    for (int i = 1; i <= args.L; i++)
     {
         pid_t skier_id = fork();
-        int rand_busstop = random_int(1, args.Z);
         if (skier_id < 0)
-            exit_error("Fork skier failed.", 1);
-
+        {
+            exit_error("Fork skier failed.\n", 1);
+        }
         if (skier_id == 0)
         {
-            skier(args, i, rand_busstop);
+            skier(args, i, random_int(1, args.Z));
         }
     }
 
     while (wait(NULL) > 0)
         ;
     if (fclose(file) == EOF)
-        exit_error("Final fclose close.", 1);
+        exit_error("Final fclose close.\n", 1);
 
     cleanup_semaphores();
     return 0;

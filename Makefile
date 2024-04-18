@@ -9,4 +9,4 @@ clean:
 	rm -f $(OUTPUT)
 
 zip:
-	zip xmikult00ios.zip proj2.c proj2.h Makefile
+	zip proj2.zip proj2.c proj2.h Makefile
