@@ -152,7 +152,7 @@ void skibus(Arg args)
     output(BUS_LEAVING, NONE, NONE);
 }
 
-void skier_busstop(int id, Arg args, int idz)
+void skier_busstop(int id, int idz)
 {
     wait_sem(&mutex_queue_update);
     if (idz == 1)
@@ -186,14 +186,14 @@ void skier_busstop(int id, Arg args, int idz)
         (*(busstop10.count))++;
 
     post_sem(&mutex_queue_update);
-    skier_waiting_on_bus_stop(id, busstop)
+    skier_waiting_on_bus_stop(id, idz);
 }
 
 void skier(Arg args, int id, int idz)
 {
     output(L_STARTED, id, NONE);
     usleep_random_in_range(0, args.TL);
-    skier_busstop(id, args, idz);
+    skier_busstop(id, idz);
 }
 
 bool check_any_skier(int busstop)
@@ -259,12 +259,86 @@ void skier_going_to_ski(int id)
 void init_semaphores(void)
 {
 
+    init_sem(&mutex_bus_stop, 1);
+    init_sem(&mutex_output, 1);
+    init_sem(&mutex_queue_update, 1);
+    init_sem(&busstop1.queue, 0);
+    init_sem(&busstop2.queue, 0);
+    init_sem(&busstop3.queue, 0);
+    init_sem(&busstop4.queue, 0);
+    init_sem(&busstop5.queue, 0);
+    init_sem(&busstop6.queue, 0);
+    init_sem(&busstop7.queue, 0);
+    init_sem(&busstop8.queue, 0);
+    init_sem(&busstop9.queue, 0);
+    init_sem(&busstop10.queue, 0);
+
     action_id = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
     if (action_id == MAP_FAILED)
     {
         exit_error("Mmap failed.", 1);
     }
+    busstop1.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+    if (busstop1.count == MAP_FAILED)
+    {
+        exit_error("Mmap failed.", 1);
+    }
+    busstop2.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+    if (busstop2.count == MAP_FAILED)
+    {
+        exit_error("Mmap failed.", 1);
+    }
+    busstop3.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+    if (busstop3.count == MAP_FAILED)
+    {
+        exit_error("Mmap failed.", 1);
+    }
+    busstop4.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+    if (busstop4.count == MAP_FAILED)
+    {
+        exit_error("Mmap failed.", 1);
+    }
+    busstop5.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+    if (busstop5.count == MAP_FAILED)
+    {
+        exit_error("Mmap failed.", 1);
+    }
+    busstop6.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+    if (busstop6.count == MAP_FAILED)
+    {
+        exit_error("Mmap failed.", 1);
+    }
+    busstop7.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+    if (busstop7.count == MAP_FAILED)
+    {
+        exit_error("Mmap failed.", 1);
+    }
+    busstop8.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+    if (busstop8.count == MAP_FAILED)
+    {
+        exit_error("Mmap failed.", 1);
+    }
+    busstop9.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+    if (busstop9.count == MAP_FAILED)
+    {
+        exit_error("Mmap failed.", 1);
+    }
+    busstop10.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+    if (busstop10.count == MAP_FAILED)
+    {
+        exit_error("Mmap failed.", 1);
+    }
 
+    *(busstop1.count) = 0;
+    *(busstop2.count) = 0;
+    *(busstop3.count) = 0;
+    *(busstop4.count) = 0;
+    *(busstop5.count) = 0;
+    *(busstop6.count) = 0;
+    *(busstop7.count) = 0;
+    *(busstop8.count) = 0;
+    *(busstop9.count) = 0;
+    *(busstop10.count) = 0;
     *action_id = 0;
 }
 
@@ -303,6 +377,7 @@ void cleanup_semaphores(void)
 {
     destroy_sem(&mutex_output);
     destroy_sem(&mutex_queue_update);
+    destroy_sem(&mutex_bus_stop);
 
     if (munmap(action_id, sizeof(int)) == -1)
     {
@@ -359,10 +434,10 @@ void output(int action_type, int id, int service)
         fprintf(file, "%d: BUS: started\n", *action_id);
         break;
     case BUS_ARRIVED_TO:
-        fprintf(file, "%d: Z %d: going home\n", *action_id, id);
+        fprintf(file, "%d: BUS: arrived to %d\n", *action_id, id, service);
         break;
     case BUS_LEAVING:
-        fprintf(file, "%d: Z %d: entering office for a service %d\n", *action_id, id, service);
+        fprintf(file, "%d: BUS: entering office for a service %d\n", *action_id, id, service);
         break;
     case BUS_ARRIVED_TO_FINAL:
         fprintf(file, "%d: Z %d: called by office worker\n", *action_id, id);
@@ -375,7 +450,7 @@ void output(int action_type, int id, int service)
         fprintf(file, "%d: U %d: serving a service of type %d\n", *action_id, id, service);
         break;
     case L_STARTED:
-        fprintf(file, "%d: U %d: service finished\n", *action_id, id);
+        fprintf(file, "%d: L %d: started\n", *action_id, id);
         break;
     case L_ARRIVED_TO:
         fprintf(file, "%d: U %d: taking break\n", *action_id, id);
