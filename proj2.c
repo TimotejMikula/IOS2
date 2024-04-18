@@ -101,7 +101,7 @@ void skibus(Arg args)
             // wait_sem(&mutex_bus_stop);
             output(BUS_LEAVING_FINAL, NONE, NONE);
 
-            if (!skiers_at_stop(ANY))
+            if (!check_any_skier(ANY))
             {
                 i = 1;
             }
@@ -200,62 +200,7 @@ void skier_busstop(int id, int idz)
         output(L_ARRIVED_TO, id, idz);
     }
     post_sem(&mutex_queue_update);
-    skiers_at_stop(idz);
-}
-
-bool skiers_at_stop(int busstop)
-{
-    bool result = true;
-
-    if (busstop == ANY)
-    {
-        if (*(busstop1.count) == 0 && *(busstop2.count) == 0 && *(busstop3.count) == 0 && *(busstop4.count) == 0 && *(busstop5.count) == 0 && *(busstop6.count) == 0 && *(busstop7.count) == 0 && *(busstop8.count) == 0 && *(busstop9.count) == 0 && *(busstop10.count) == 0)
-        {
-            result = false;
-        }
-    }
-    else if (busstop == 1 && *(busstop1.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 2 && *(busstop2.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 3 && *(busstop3.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 4 && *(busstop4.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 5 && *(busstop5.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 6 && *(busstop6.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 7 && *(busstop7.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 8 && *(busstop8.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 9 && *(busstop9.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 10 && *(busstop10.count) == 0)
-    {
-        result = false;
-    }
-
-    return result;
+    check_any_skier(idz);
 }
 
 void skier(Arg args, int id, int idz)
@@ -448,10 +393,56 @@ void cleanup_semaphores(void)
     destroy_sem(&mutex_output);
     destroy_sem(&mutex_queue_update);
     destroy_sem(&mutex_bus_stop);
+    destroy_sem(&busstop1.queue);
+    destroy_sem(&busstop2.queue);
+    destroy_sem(&busstop3.queue);
+    destroy_sem(&busstop4.queue);
+    destroy_sem(&busstop5.queue);
+    destroy_sem(&busstop6.queue);
+    destroy_sem(&busstop7.queue);
+    destroy_sem(&busstop8.queue);
+    destroy_sem(&busstop9.queue);
+    destroy_sem(&busstop10.queue);
 
     if (munmap(action_id, sizeof(int)) == -1)
     {
         exit_error("Munmap sem failed.\n", 1);
+    }
+    if (munmap(busstop2.count, sizeof(int)) == -1)
+    {
+        exit_error("Munmap sem failed.", 1);
+    }
+    if (munmap(busstop3.count, sizeof(int)) == -1)
+    {
+        exit_error("Munmap sem failed.", 1);
+    }
+    if (munmap(busstop4.count, sizeof(int)) == -1)
+    {
+        exit_error("Munmap sem failed.", 1);
+    }
+    if (munmap(busstop5.count, sizeof(int)) == -1)
+    {
+        exit_error("Munmap sem failed.", 1);
+    }
+    if (munmap(busstop6.count, sizeof(int)) == -1)
+    {
+        exit_error("Munmap sem failed.", 1);
+    }
+    if (munmap(busstop7.count, sizeof(int)) == -1)
+    {
+        exit_error("Munmap sem failed.", 1);
+    }
+    if (munmap(busstop8.count, sizeof(int)) == -1)
+    {
+        exit_error("Munmap sem failed.", 1);
+    }
+    if (munmap(busstop9.count, sizeof(int)) == -1)
+    {
+        exit_error("Munmap sem failed.", 1);
+    }
+    if (munmap(busstop10.count, sizeof(int)) == -1)
+    {
+        exit_error("Munmap sem failed.", 1);
     }
 }
 
