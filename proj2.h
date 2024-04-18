@@ -50,7 +50,8 @@ void skibus(Arg args);
 void skier(Arg args, int id, int idz);
 void skier_busstop(int id, int idz);
 bool check_any_skier(int idz);
-void skiers_boarding(int idz);
+void skiers_boarding(int id, int idz);
+void skier_going_to_ski(int id);
 
 void wait_sem(sem_t **sem);
 void post_sem(sem_t **sem);

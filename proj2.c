@@ -99,6 +99,7 @@ void skibus(Arg args)
         {
             output(BUS_ARRIVED_TO_FINAL, NONE, NONE);
             // wait_sem(&mutex_bus_stop);
+            skier_going_to_ski(i);
             output(BUS_LEAVING_FINAL, NONE, NONE);
 
             if (!check_any_skier(ANY))
@@ -109,11 +110,11 @@ void skibus(Arg args)
         else
         {
             output(BUS_ARRIVED_TO, NONE, i);
-            // wait_sem(&mutex_bus_stop);
-            // if (skiers_at_stop(i))
-            // {
-            //     skiers_boarding(i);
-            // }
+            wait_sem(&mutex_bus_stop);
+            if (!check_any_skier(i))
+            {
+                skiers_boarding(i, i);
+            }
             output(BUS_LEAVING, NONE, i);
         }
     }
@@ -121,9 +122,10 @@ void skibus(Arg args)
     exit(0);
 }
 
-void skiers_boarding(int idz)
+void skiers_boarding(int id, int idz)
 {
 
+    output(L_BOARDING, id, idz);
     post_sem(&mutex_bus_stop);
 }
 
