@@ -35,6 +35,7 @@ Bus_Stop busstop7;
 Bus_Stop busstop8;
 Bus_Stop busstop9;
 Bus_Stop busstop10;
+sem_t finalstop;
 FILE *file;
 bool *post_open;
 int *action_id;
@@ -95,10 +96,17 @@ void skibus(Arg args)
     for (int i = 1; i <= args.Z; i++)
     {
         usleep_random_in_range(0, args.TB);
+        output(BUS_ARRIVED_TO, NONE, i);
+        // wait_sem(&mutex_bus_stop);
+        if (!check_any_skier(i))
+        {
+            skiers_boarding(i, i);
+        }
+        output(BUS_LEAVING, NONE, i);
         if (i == args.Z)
         {
             output(BUS_ARRIVED_TO_FINAL, NONE, NONE);
-            // wait_sem(&mutex_bus_stop);
+            post_sem(&finalstop);
             skier_going_to_ski(i);
             output(BUS_LEAVING_FINAL, NONE, NONE);
 
@@ -106,16 +114,6 @@ void skibus(Arg args)
             {
                 i = 0;
             }
-        }
-        else
-        {
-            output(BUS_ARRIVED_TO, NONE, i);
-            wait_sem(&mutex_bus_stop);
-            if (!check_any_skier(i))
-            {
-                skiers_boarding(i, i);
-            }
-            output(BUS_LEAVING, NONE, i);
         }
     }
     output(BUS_FINISH, NONE, NONE);
@@ -132,6 +130,7 @@ void skiers_boarding(int id, int idz)
 void skier_busstop(int id, int idz)
 {
     wait_sem(&mutex_queue_update);
+
     if (idz == 1)
     {
         (*(busstop1.count))++;
@@ -279,6 +278,7 @@ void init_semaphores(void)
     init_sem(&mutex_bus_stop, 1);
     init_sem(&mutex_output, 1);
     init_sem(&mutex_queue_update, 1);
+    init_sem(&finalstop, 1);
     init_sem(&busstop1.queue, 0);
     init_sem(&busstop2.queue, 0);
     init_sem(&busstop3.queue, 0);
@@ -395,6 +395,7 @@ void cleanup_semaphores(void)
     destroy_sem(&mutex_output);
     destroy_sem(&mutex_queue_update);
     destroy_sem(&mutex_bus_stop);
+    destroy_sem(&finalstop);
     destroy_sem(&busstop1.queue);
     destroy_sem(&busstop2.queue);
     destroy_sem(&busstop3.queue);
@@ -544,7 +545,7 @@ int main(int argc, char **argv)
     pid_t skibus_id = fork();
     if (skibus_id < 0)
     {
-        exit_error("skibus fork error\n", 1);
+        exit_error("Skibus fork error\n", 1);
     }
     if (skibus_id == 0)
     {
