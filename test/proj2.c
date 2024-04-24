@@ -268,19 +268,17 @@ void skier(Arg args, int id, int idz)
     output(L_STARTED, id, NONE);
     allskiers++;
     usleep_random_in_range(0, args.TL);
-    if (*count_in_bus < args.K /*&& bus na zastavke*/)
-    {
-        output(L_ARRIVED_TO, id, idz);
-        bus_stops[idz]++;
 
-        output(L_BOARDING, id, NONE);
-        count_in_bus++;
+    output(L_ARRIVED_TO, id, idz);
+    bus_stops[idz]++;
 
-        output(L_GOING_TO_SKI, id, NONE);
-        count_in_bus--;
+    output(L_BOARDING, id, NONE);
+    count_in_bus++;
 
-        exit(0);
-    }
+    output(L_GOING_TO_SKI, id, NONE);
+    count_in_bus--;
+
+    exit(0);
 }
 
 int main(int argc, char **argv)
