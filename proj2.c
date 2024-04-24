@@ -35,7 +35,7 @@ Bus_Stop busstop7;
 Bus_Stop busstop8;
 Bus_Stop busstop9;
 Bus_Stop busstop10;
-sem_t finalstop;
+sem_t *finalstop;
 FILE *file;
 bool *post_open;
 int *action_id;
@@ -568,7 +568,9 @@ int main(int argc, char **argv)
     while (wait(NULL) > 0)
         ;
     if (fclose(file) == EOF)
+    {
         exit_error("Final fclose close.\n", 1);
+    }
 
     cleanup_semaphores();
     return 0;
