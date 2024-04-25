@@ -40,28 +40,22 @@ typedef struct
 typedef struct
 {
     int *count;
-    sem_t *queue;
-} Bus_Stop;
+    sem_t *semaphore;
+} BusStop;
 
 Arg ParseArgs(int argc, char *const argv[]);
 void exit_error(char *msg, int errcode);
 int isInteger(char *str);
-void skibus(Arg args);
-void skier(Arg args, int id, int idz);
-void skier_busstop(int id, int idz);
-bool check_any_skier(int idz);
-void skiers_boarding(int id, int idz);
-void skier_going_to_ski(int id);
-
 void wait_sem(sem_t **sem);
 void post_sem(sem_t **sem);
 void init_sem(sem_t **sem, int value);
-void init_semaphores(void);
+void init_semaphores(Arg args);
 void destroy_sem(sem_t **sem);
-void cleanup_semaphores(void);
+void cleanup_semaphores(Arg args);
 void usleep_random_in_range(int lower, int upper);
-
 void clear_and_open_output_file(void);
 void output(int action_type, int id, int busstop);
+void skibus(Arg args);
+void skier(Arg args, int id, int idz);
 
 #endif

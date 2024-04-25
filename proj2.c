@@ -8,7 +8,6 @@
  * @author Timotej Mikula, xmikult00
  * @date 16.4.2024
  */
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -23,23 +22,14 @@
 #include "proj2.h"
 
 sem_t *mutex_output;
-sem_t *mutex_bus_stop;
-sem_t *mutex_queue_update;
-Bus_Stop busstop1;
-Bus_Stop busstop2;
-Bus_Stop busstop3;
-Bus_Stop busstop4;
-Bus_Stop busstop5;
-Bus_Stop busstop6;
-Bus_Stop busstop7;
-Bus_Stop busstop8;
-Bus_Stop busstop9;
-Bus_Stop busstop10;
-sem_t *finalstop;
+sem_t *boarding;
 FILE *file;
-bool *post_open;
 int *action_id;
 int seed;
+int *count_in_bus;
+int *allskiers;
+
+BusStop *busstop;
 
 Arg ParseArgs(int argc, char *const argv[])
 {
@@ -90,273 +80,82 @@ int isInteger(char *str)
     return 1;
 }
 
-void skibus(Arg args)
+int random_int(int lower, int upper)
 {
-    output(BUS_STARTED, NONE, NONE);
+    seed += getpid() * 3696;
+
+    srand(seed);
+    int randn = (int)rand() % (upper - lower + 1) + lower;
+
+    // generate random integer in the range <lower, upper>
+    return randn;
+}
+
+void usleep_random_in_range(int lower, int upper)
+{
+    int rand_n = random_int(lower, upper);
+    usleep(rand_n);
+}
+
+void clear_and_open_output_file(void)
+{
+    // Clear the output file.
+
+    file = fopen("proj2.out", "w");
+    if (file == NULL)
+    {
+        exit_error("Fopen failed.\n", 1);
+    }
+
+    if (fclose(file) == EOF)
+    {
+        exit_error("fclose close.\n", 1);
+    }
+
+    file = fopen("proj2.out", "a");
+    if (file == NULL)
+    {
+        exit_error("Fopen 2 failed.\n", 1);
+    }
+}
+
+void init_semaphores(Arg args)
+{
+    init_sem(&mutex_output, 1);
+    init_sem(&boarding, 1);
+
     for (int i = 1; i <= args.Z; i++)
     {
-        usleep_random_in_range(0, args.TB);
-        output(BUS_ARRIVED_TO, NONE, i);
-        // wait_sem(&mutex_bus_stop);
-        if (!check_any_skier(i))
+        init_sem(&busstop[i].semaphore, 1);
+        busstop[i].count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+        if (allskiers == MAP_FAILED)
         {
-            skiers_boarding(i, i);
+            exit_error("Mmap failed.\n", 1);
         }
-        output(BUS_LEAVING, NONE, i);
-        if (i == args.Z)
-        {
-            output(BUS_ARRIVED_TO_FINAL, NONE, NONE);
-            post_sem(&finalstop);
-            skier_going_to_ski(i);
-            output(BUS_LEAVING_FINAL, NONE, NONE);
-
-            if (!check_any_skier(ANY))
-            {
-                i = 0;
-            }
-        }
+        *(busstop[i].count) = 0;
     }
-    output(BUS_FINISH, NONE, NONE);
-    exit(0);
-}
-
-void skiers_boarding(int id, int idz)
-{
-
-    output(L_BOARDING, id, idz);
-    post_sem(&mutex_bus_stop);
-}
-
-void skier_busstop(int id, int idz)
-{
-    wait_sem(&mutex_queue_update);
-
-    if (idz == 1)
-    {
-        (*(busstop1.count))++;
-        // wait_sem(&(busstop1.queue));
-        output(L_ARRIVED_TO, id, idz);
-    }
-
-    if (idz == 2)
-    {
-        (*(busstop2.count))++;
-        // wait_sem(&(busstop2.queue));
-        output(L_ARRIVED_TO, id, idz);
-    }
-
-    if (idz == 3)
-    {
-        (*(busstop3.count))++;
-        // wait_sem(&(busstop3.queue));
-        output(L_ARRIVED_TO, id, idz);
-    }
-
-    if (idz == 4)
-    {
-        (*(busstop4.count))++;
-        // wait_sem(&(busstop4.queue));
-        output(L_ARRIVED_TO, id, idz);
-    }
-
-    if (idz == 5)
-    {
-        (*(busstop5.count))++;
-        // wait_sem(&(busstop5.queue));
-        output(L_ARRIVED_TO, id, idz);
-    }
-
-    if (idz == 6)
-    {
-        (*(busstop6.count))++;
-        // wait_sem(&(busstop6.queue));
-        output(L_ARRIVED_TO, id, idz);
-    }
-
-    if (idz == 7)
-    {
-        (*(busstop7.count))++;
-        // wait_sem(&(busstop7.queue));
-        output(L_ARRIVED_TO, id, idz);
-    }
-
-    if (idz == 8)
-    {
-        (*(busstop8.count))++;
-        // wait_sem(&(busstop8.queue));
-        output(L_ARRIVED_TO, id, idz);
-    }
-
-    if (idz == 9)
-    {
-        (*(busstop9.count))++;
-        // wait_sem(&(busstop9.queue));
-        output(L_ARRIVED_TO, id, idz);
-    }
-
-    if (idz == 10)
-    {
-        (*(busstop10.count))++;
-        // wait_sem(&(busstop10.queue));
-        output(L_ARRIVED_TO, id, idz);
-    }
-    post_sem(&mutex_queue_update);
-    // check_any_skier(idz);
-}
-
-void skier(Arg args, int id, int idz)
-{
-    output(L_STARTED, id, NONE);
-    usleep_random_in_range(0, args.TL);
-    skier_busstop(id, idz);
-    exit(0);
-}
-
-bool check_any_skier(int busstop)
-{
-    bool result = true;
-
-    if (busstop == ANY)
-    {
-        if (*(busstop1.count) == 0 && *(busstop2.count) == 0 && *(busstop3.count) == 0 && *(busstop4.count) == 0 && *(busstop5.count) == 0 && *(busstop6.count) == 0 && *(busstop7.count) == 0 && *(busstop8.count) == 0 && *(busstop9.count) == 0 && *(busstop10.count) == 0)
-        {
-            result = false;
-        }
-    }
-    else if (busstop == 1 && *(busstop1.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 2 && *(busstop2.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 3 && *(busstop3.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 3 && *(busstop4.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 3 && *(busstop5.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 3 && *(busstop6.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 3 && *(busstop7.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 3 && *(busstop8.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 3 && *(busstop9.count) == 0)
-    {
-        result = false;
-    }
-    else if (busstop == 3 && *(busstop10.count) == 0)
-    {
-        result = false;
-    }
-    return result;
-}
-
-void skier_going_to_ski(int id)
-{
-    output(L_GOING_TO_SKI, id, NONE);
-    exit(0);
-}
-
-void init_semaphores(void)
-{
-
-    init_sem(&mutex_bus_stop, 1);
-    init_sem(&mutex_output, 1);
-    init_sem(&mutex_queue_update, 1);
-    init_sem(&finalstop, 1);
-    init_sem(&busstop1.queue, 0);
-    init_sem(&busstop2.queue, 0);
-    init_sem(&busstop3.queue, 0);
-    init_sem(&busstop4.queue, 0);
-    init_sem(&busstop5.queue, 0);
-    init_sem(&busstop6.queue, 0);
-    init_sem(&busstop7.queue, 0);
-    init_sem(&busstop8.queue, 0);
-    init_sem(&busstop9.queue, 0);
-    init_sem(&busstop10.queue, 0);
 
     action_id = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
     if (action_id == MAP_FAILED)
     {
-        exit_error("Mmap failed.", 1);
-    }
-    busstop1.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-    if (busstop1.count == MAP_FAILED)
-    {
-        exit_error("Mmap failed.", 1);
-    }
-    busstop2.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-    if (busstop2.count == MAP_FAILED)
-    {
-        exit_error("Mmap failed.", 1);
-    }
-    busstop3.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-    if (busstop3.count == MAP_FAILED)
-    {
-        exit_error("Mmap failed.", 1);
-    }
-    busstop4.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-    if (busstop4.count == MAP_FAILED)
-    {
-        exit_error("Mmap failed.", 1);
-    }
-    busstop5.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-    if (busstop5.count == MAP_FAILED)
-    {
-        exit_error("Mmap failed.", 1);
-    }
-    busstop6.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-    if (busstop6.count == MAP_FAILED)
-    {
-        exit_error("Mmap failed.", 1);
-    }
-    busstop7.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-    if (busstop7.count == MAP_FAILED)
-    {
-        exit_error("Mmap failed.", 1);
-    }
-    busstop8.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-    if (busstop8.count == MAP_FAILED)
-    {
-        exit_error("Mmap failed.", 1);
-    }
-    busstop9.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-    if (busstop9.count == MAP_FAILED)
-    {
-        exit_error("Mmap failed.", 1);
-    }
-    busstop10.count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-    if (busstop10.count == MAP_FAILED)
-    {
-        exit_error("Mmap failed.", 1);
+        exit_error("Mmap failed.\n", 1);
     }
 
-    *(busstop1.count) = 0;
-    *(busstop2.count) = 0;
-    *(busstop3.count) = 0;
-    *(busstop4.count) = 0;
-    *(busstop5.count) = 0;
-    *(busstop6.count) = 0;
-    *(busstop7.count) = 0;
-    *(busstop8.count) = 0;
-    *(busstop9.count) = 0;
-    *(busstop10.count) = 0;
+    count_in_bus = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+    if (count_in_bus == MAP_FAILED)
+    {
+        exit_error("Mmap failed.\n", 1);
+    }
+
+    allskiers = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+    if (allskiers == MAP_FAILED)
+    {
+        exit_error("Mmap failed.\n", 1);
+    }
+
     *action_id = 0;
+    *count_in_bus = 0;
+    *allskiers = 0;
 }
 
 void wait_sem(sem_t **sem)
@@ -390,101 +189,31 @@ void destroy_sem(sem_t **sem)
         exit_error("Munmap sem failed.", 1);
 }
 
-void cleanup_semaphores(void)
+void cleanup_semaphores(Arg args)
 {
     destroy_sem(&mutex_output);
-    destroy_sem(&mutex_queue_update);
-    destroy_sem(&mutex_bus_stop);
-    destroy_sem(&finalstop);
-    destroy_sem(&busstop1.queue);
-    destroy_sem(&busstop2.queue);
-    destroy_sem(&busstop3.queue);
-    destroy_sem(&busstop4.queue);
-    destroy_sem(&busstop5.queue);
-    destroy_sem(&busstop6.queue);
-    destroy_sem(&busstop7.queue);
-    destroy_sem(&busstop8.queue);
-    destroy_sem(&busstop9.queue);
-    destroy_sem(&busstop10.queue);
+    destroy_sem(&boarding);
+
+    for (int i = 1; i <= args.Z; i++)
+    {
+        destroy_sem(&busstop[i].semaphore);
+        if (munmap(busstop[i].count, sizeof(int)) == -1)
+        {
+            exit_error("Munmap failed.\n", 1);
+        }
+    }
 
     if (munmap(action_id, sizeof(int)) == -1)
     {
-        exit_error("Munmap sem failed.\n", 1);
+        exit_error("Munmap failed.\n", 1);
     }
-    if (munmap(busstop2.count, sizeof(int)) == -1)
+    if (munmap(count_in_bus, sizeof(int)) == -1)
     {
-        exit_error("Munmap sem failed.", 1);
+        exit_error("Munmap failed.\n", 1);
     }
-    if (munmap(busstop3.count, sizeof(int)) == -1)
+    if (munmap(allskiers, sizeof(int)) == -1)
     {
-        exit_error("Munmap sem failed.", 1);
-    }
-    if (munmap(busstop4.count, sizeof(int)) == -1)
-    {
-        exit_error("Munmap sem failed.", 1);
-    }
-    if (munmap(busstop5.count, sizeof(int)) == -1)
-    {
-        exit_error("Munmap sem failed.", 1);
-    }
-    if (munmap(busstop6.count, sizeof(int)) == -1)
-    {
-        exit_error("Munmap sem failed.", 1);
-    }
-    if (munmap(busstop7.count, sizeof(int)) == -1)
-    {
-        exit_error("Munmap sem failed.", 1);
-    }
-    if (munmap(busstop8.count, sizeof(int)) == -1)
-    {
-        exit_error("Munmap sem failed.", 1);
-    }
-    if (munmap(busstop9.count, sizeof(int)) == -1)
-    {
-        exit_error("Munmap sem failed.", 1);
-    }
-    if (munmap(busstop10.count, sizeof(int)) == -1)
-    {
-        exit_error("Munmap sem failed.", 1);
-    }
-}
-
-int random_int(int lower, int upper)
-{
-    seed += getpid() * 3696;
-
-    srand(seed);
-    int randn = (int)rand() % (upper - lower + 1) + lower;
-
-    // generate random integer in the range <lower, upper>
-    return randn;
-}
-
-void usleep_random_in_range(int lower, int upper)
-{
-    int rand_n = random_int(lower, upper);
-    usleep(rand_n);
-}
-
-void clear_and_open_output_file(void)
-{
-    // Clear the output file.
-
-    file = fopen("proj2.out", "w");
-    if (file == NULL)
-    {
-        exit_error("Fopen failed.", 1);
-    }
-
-    if (fclose(file) == EOF)
-    {
-        exit_error("fclose close.", 1);
-    }
-
-    file = fopen("proj2.out", "a");
-    if (file == NULL)
-    {
-        exit_error("Fopen 2 failed.", 1);
+        exit_error("Munmap failed.\n", 1);
     }
 }
 
@@ -527,16 +256,70 @@ void output(int action_type, int id, int busstop)
         fprintf(file, "%d: L %d: going to ski\n", *action_id, id);
         break;
     default:
-        exit_error("Internal error: Unknown output action_type.", 1);
+        exit_error("Internal error: Unknown output action_type.\n", 1);
     }
 
     post_sem(&mutex_output);
 }
 
+void skibus(Arg args)
+{
+    output(BUS_STARTED, NONE, NONE);
+    for (int i = 1; i <= args.Z; i++)
+    {
+        usleep_random_in_range(0, args.TB);
+        wait_sem(&boarding);
+        output(BUS_ARRIVED_TO, NONE, i);
+        wait_sem(&busstop[i].semaphore);
+        output(BUS_LEAVING, NONE, i);
+        post_sem(&boarding);
+        if (i == args.Z)
+        {
+            output(BUS_ARRIVED_TO_FINAL, NONE, NONE);
+            // wait_sem();
+            output(BUS_LEAVING_FINAL, NONE, NONE);
+
+            for (int j = 1; j <= args.Z; j++)
+            {
+                if (*busstop[j].count > 0)
+                {
+                    i = 1;
+                    break;
+                }
+            }
+        }
+    }
+    output(BUS_FINISH, NONE, NONE);
+    exit(0);
+}
+
+void skier(Arg args, int id, int idz)
+{
+    output(L_STARTED, id, NONE);
+    allskiers++;
+    usleep_random_in_range(0, args.TL);
+
+    output(L_ARRIVED_TO, id, idz);
+    busstop[idz].count++;
+
+    output(L_BOARDING, id, NONE);
+    count_in_bus++;
+    busstop[idz].count--;
+    if (busstop[idz].count == 0)
+    {
+        post_sem(&busstop[idz].semaphore);
+    }
+
+    output(L_GOING_TO_SKI, id, NONE);
+    count_in_bus--;
+
+    exit(0);
+}
+
 int main(int argc, char **argv)
 {
     Arg args = ParseArgs(argc, argv);
-    init_semaphores();
+    init_semaphores(args);
     clear_and_open_output_file();
     setbuf(file, NULL);
     setbuf(stdout, NULL);
@@ -572,6 +355,6 @@ int main(int argc, char **argv)
         exit_error("Final fclose close.\n", 1);
     }
 
-    cleanup_semaphores();
+    cleanup_semaphores(args);
     return 0;
 }
