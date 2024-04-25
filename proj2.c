@@ -8,6 +8,7 @@
  * @author Timotej Mikula, xmikult00
  * @date 16.4.2024
  */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -23,6 +24,7 @@
 
 sem_t *mutex_output;
 sem_t *boarding;
+sem_t *leaving;
 FILE *file;
 int *action_id;
 int seed;
@@ -123,12 +125,13 @@ void init_semaphores(Arg args)
 {
     init_sem(&mutex_output, 1);
     init_sem(&boarding, 1);
+    init_sem(&leaving, 1);
 
     for (int i = 1; i <= args.Z; i++)
     {
-        init_sem(&busstop[i].semaphore, 1);
+        init_sem(&busstop[i].semaphore, 0);
         busstop[i].count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-        if (allskiers == MAP_FAILED)
+        if (busstop[i].count == MAP_FAILED)
         {
             exit_error("Mmap failed.\n", 1);
         }
@@ -193,6 +196,7 @@ void cleanup_semaphores(Arg args)
 {
     destroy_sem(&mutex_output);
     destroy_sem(&boarding);
+    destroy_sem(&leaving);
 
     for (int i = 1; i <= args.Z; i++)
     {
@@ -275,8 +279,9 @@ void skibus(Arg args)
         post_sem(&boarding);
         if (i == args.Z)
         {
+            usleep_random_in_range(0, args.TB);
             output(BUS_ARRIVED_TO_FINAL, NONE, NONE);
-            // wait_sem();
+            wait_sem(&leaving);
             output(BUS_LEAVING_FINAL, NONE, NONE);
 
             for (int j = 1; j <= args.Z; j++)
@@ -312,6 +317,10 @@ void skier(Arg args, int id, int idz)
 
     output(L_GOING_TO_SKI, id, NONE);
     count_in_bus--;
+    if (count_in_bus == 0)
+    {
+        post_sem(&leaving);
+    }
 
     exit(0);
 }
