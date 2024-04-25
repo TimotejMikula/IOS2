@@ -1,5 +1,6 @@
 CC = gcc
-CFLAGS = -std=gnu99 -Wall -Wextra -Werror -pedantic -pthread
+CFLAGS = -std=gnu99 -Wall -Wextra -Werror -pedantic -pthread -lrt
+LDFLAGS = -pthread -lrt
 OUTPUT = proj2
 
 build: proj2.c proj2.h

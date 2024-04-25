@@ -31,7 +31,7 @@ int seed;
 int *count_in_bus;
 int *allskiers;
 
-BusStop *busstop;
+BusStop busstop[11];
 
 Arg ParseArgs(int argc, char *const argv[])
 {
@@ -177,10 +177,14 @@ void init_sem(sem_t **sem, int value)
 {
     *sem = mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
     if (*sem == MAP_FAILED)
+    {
         exit_error("Mmap failed.", 1);
+    }
 
     if (sem_init(*sem, 1, value) == -1)
+    {
         exit_error("Init sem failed.", 1);
+    }
 }
 
 void destroy_sem(sem_t **sem)
@@ -272,11 +276,14 @@ void skibus(Arg args)
     for (int i = 1; i <= args.Z; i++)
     {
         usleep_random_in_range(0, args.TB);
-        wait_sem(&boarding);
+        // wait_sem(&boarding);
         output(BUS_ARRIVED_TO, NONE, i);
-        wait_sem(&busstop[i].semaphore);
+        for (int s = 0; s < *busstop[i].count; s++)
+        {
+            post_sem(&busstop[i].semaphore);
+        }
         output(BUS_LEAVING, NONE, i);
-        post_sem(&boarding);
+        // post_sem(&boarding);
         if (i == args.Z)
         {
             usleep_random_in_range(0, args.TB);
@@ -306,11 +313,15 @@ void skier(Arg args, int id, int idz)
 
     output(L_ARRIVED_TO, id, idz);
     busstop[idz].count++;
+    wait_sem(&busstop[idz].semaphore);
 
     output(L_BOARDING, id, NONE);
-    count_in_bus++;
-    busstop[idz].count--;
-    if (busstop[idz].count == 0)
+    if (*count_in_bus < args.K)
+    {
+        count_in_bus++;
+        busstop[idz].count--;
+    }
+    if (busstop[idz].count == 0 || *count_in_bus == args.K)
     {
         post_sem(&busstop[idz].semaphore);
     }
