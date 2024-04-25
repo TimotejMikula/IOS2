@@ -13,6 +13,8 @@
 #include "proj2.h"
 
 sem_t *mutex_output;
+sem_t semaphores[];
+sem_t *boarding;
 FILE *file;
 int *action_id;
 int seed;
@@ -111,6 +113,7 @@ void clear_and_open_output_file(void)
 void init_semaphores(Arg args)
 {
     init_sem(&mutex_output, 1);
+    init_sem(&boarding, 1);
 
     action_id = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
     if (action_id == MAP_FAILED)
@@ -139,8 +142,9 @@ void init_semaphores(Arg args)
     *action_id = 0;
     *count_in_bus = 0;
     *allskiers = 0;
-    for (int i = 0; i < args.Z; i++)
+    for (int i = 1; i <= args.Z; i++)
     {
+        init_sem(semaphores[i], 1);
         bus_stops[i] = 0;
     }
 }
@@ -179,6 +183,11 @@ void destroy_sem(sem_t **sem)
 void cleanup_semaphores(Arg args)
 {
     destroy_sem(&mutex_output);
+    destroy_sem(&boarding);
+
+    for (int i = 1; i <= args.Z; i++) {
+        destroy_sem(&semaphores);
+    }
 
     if (munmap(action_id, sizeof(int)) == -1)
     {
@@ -237,7 +246,7 @@ void output(int action_type, int id, int busstop)
         fprintf(file, "%d: L %d: going to ski\n", *action_id, id);
         break;
     default:
-        exit_error("Internal error: Unknown output action_type.", 1);
+        exit_error("Internal error: Unknown output action_type.\n", 1);
     }
 
     post_sem(&mutex_output);
@@ -249,14 +258,25 @@ void skibus(Arg args)
     for (int i = 1; i <= args.Z; i++)
     {
         usleep_random_in_range(0, args.TB);
+        sem_wait(&boarding);
         output(BUS_ARRIVED_TO, NONE, i);
-
+        sem_wait(semaphores[i]);
         output(BUS_LEAVING, NONE, i);
+        sem_post(&boarding);
         if (i == args.Z)
         {
             output(BUS_ARRIVED_TO_FINAL, NONE, NONE);
 
             output(BUS_LEAVING_FINAL, NONE, NONE);
+
+            for (int j = 0; j < args.Z; j++)
+            {
+                if (bus_stops[j] > 0)
+                {
+                    i = 1;
+                    break;
+                }
+            }
         }
     }
     output(BUS_FINISH, NONE, NONE);
@@ -274,9 +294,14 @@ void skier(Arg args, int id, int idz)
 
     output(L_BOARDING, id, NONE);
     count_in_bus++;
+    bus_stops[idz]--;
+    if (bus_stops[idz] == 0) {
+        post_sem(semaphores[idz]);
+    }
 
     output(L_GOING_TO_SKI, id, NONE);
     count_in_bus--;
+    
 
     exit(0);
 }
