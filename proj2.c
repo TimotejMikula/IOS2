@@ -22,15 +22,15 @@
 #include <semaphore.h>
 #include "proj2.h"
 
-// sem_t *mutex;
-sem_t *mutex_output;
-sem_t *boarding;
-sem_t *leaving;
+// sem_t *multiplex;
+sem_t *mutex_output; // mutex for output
+sem_t *boarding;     // mutex for boarding
+sem_t *leaving;      // mutex for unboarding/skier leaves bus
 FILE *file;
 int *action_id;
 int seed;
 int *count_in_bus;
-int *allskiers;
+int *alldepartedskiers;
 
 BusStop busstop[11]; // 0 - final 1-10 - stops
 
@@ -83,6 +83,11 @@ int isInteger(char *str)
     return 1;
 }
 
+int min(int a, int b)
+{
+    return (a < b) ? a : b;
+}
+
 int random_int(int lower, int upper)
 {
     seed += getpid() * 3696;
@@ -124,10 +129,10 @@ void clear_and_open_output_file(void)
 
 void init_semaphores(Arg args)
 {
-    // init_sem(&mutex, 1);
+    // init_sem(&multiplex, args.K);
     init_sem(&mutex_output, 1);
     init_sem(&boarding, 1);
-    init_sem(&leaving, 1);
+    init_sem(&leaving, 0);
 
     for (int i = 0; i <= args.Z; i++)
     {
@@ -152,15 +157,15 @@ void init_semaphores(Arg args)
         exit_error("Mmap failed.\n", 1);
     }
 
-    allskiers = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-    if (allskiers == MAP_FAILED)
+    alldepartedskiers = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+    if (alldepartedskiers == MAP_FAILED)
     {
         exit_error("Mmap failed.\n", 1);
     }
 
     *action_id = 0;
     *count_in_bus = 0;
-    *allskiers = 0;
+    *alldepartedskiers = 0;
 }
 
 void wait_sem(sem_t **sem)
@@ -200,7 +205,7 @@ void destroy_sem(sem_t **sem)
 
 void cleanup_semaphores(Arg args)
 {
-    // destroy_sem(&mutex);
+    // destroy_sem(&multiplex);
     destroy_sem(&mutex_output);
     destroy_sem(&boarding);
     destroy_sem(&leaving);
@@ -222,7 +227,7 @@ void cleanup_semaphores(Arg args)
     {
         exit_error("Munmap failed.\n", 1);
     }
-    if (munmap(allskiers, sizeof(int)) == -1)
+    if (munmap(alldepartedskiers, sizeof(int)) == -1)
     {
         exit_error("Munmap failed.\n", 1);
     }
@@ -276,72 +281,79 @@ void output(int action_type, int id, int busstop)
 void skibus(Arg args)
 {
     output(BUS_STARTED, NONE, NONE);
+    // int i = 1;
+    // while (i <= args.Z)
     for (int i = 1; i <= args.Z; i++)
     {
         usleep_random_in_range(0, args.TB);
+        // wait_sem(&boarding);
         output(BUS_ARRIVED_TO, NONE, i);
-        post_sem(&busstop[i].semaphore);
-        if (*busstop[i].count > 0)
+        if ((*busstop[i].count) > 0)
         {
-            post_sem(&leaving);
+            post_sem(&busstop[i].semaphore);
+            wait_sem(&leaving);
         }
-        wait_sem(&boarding);
-        wait_sem(&busstop[i].semaphore);
         output(BUS_LEAVING, NONE, i);
+        // post_sem(&boarding);
         if (i == args.Z)
         {
+            i = 0;
             usleep_random_in_range(0, args.TB);
+            // wait_sem(&boarding);
             output(BUS_ARRIVED_TO_FINAL, NONE, NONE);
-            post_sem(&busstop[0].semaphore);
-            if (*count_in_bus > 0)
+            if ((*count_in_bus) > 0)
             {
-                post_sem(&leaving);
+                post_sem(&busstop[i].semaphore);
+                wait_sem(&leaving);
             }
-            wait_sem(&leaving);
-            wait_sem(&busstop[0].semaphore);
             output(BUS_LEAVING_FINAL, NONE, NONE);
-
-            for (int j = 1; j <= args.Z; j++)
+            // post_sem(&boarding);
+            if (args.L == (*alldepartedskiers))
             {
-                if (*busstop[j].count > 0)
-                {
-                    i = 1;
-                    break;
-                }
+                output(BUS_FINISH, NONE, NONE);
+                exit(0);
             }
+            // output(BUS_FINISH, NONE, NONE);
+            // exit(0);
         }
+        // i++;
     }
-    output(BUS_FINISH, NONE, NONE);
-    exit(0);
 }
 
 void skier(Arg args, int id, int idz)
 {
     output(L_STARTED, id, NONE);
-    allskiers++;
     usleep_random_in_range(0, args.TL);
     output(L_ARRIVED_TO, id, idz);
-    busstop[idz].count++;
+    (*busstop[idz].count)++;
     wait_sem(&busstop[idz].semaphore);
-    if (*count_in_bus < args.K)
-    {
-        output(L_BOARDING, id, NONE);
-        count_in_bus++;
-        busstop[idz].count--;
-        if (busstop[idz].count == 0 || *count_in_bus == args.K)
-        {
-            post_sem(&boarding);
-        }
-    }
-    post_sem(&busstop[idz].semaphore);
-    wait_sem(&busstop[0].semaphore);
-    output(L_GOING_TO_SKI, id, NONE);
-    count_in_bus--;
-    if (count_in_bus == 0)
+    output(L_BOARDING, id, NONE);
+    // wait_sem(&boarding);
+    (*count_in_bus)++;
+    (*busstop[idz].count)--;
+    // post_sem(&boarding);
+    if ((*busstop[idz].count == 0) || (*count_in_bus == args.K))
     {
         post_sem(&leaving);
     }
-    post_sem(&busstop[0].semaphore);
+    else
+    {
+        post_sem(&busstop[idz].semaphore);
+    }
+    wait_sem(&busstop[0].semaphore);
+    output(L_GOING_TO_SKI, id, NONE);
+    // wait_sem(&boarding);
+    (*alldepartedskiers)++;
+    (*count_in_bus)--;
+    // post_sem(&boarding);
+    if (*count_in_bus == 0)
+    {
+        post_sem(&leaving);
+    }
+    else
+    {
+        post_sem(&busstop[0].semaphore);
+    }
     exit(0);
 }
 
@@ -385,5 +397,6 @@ int main(int argc, char **argv)
     }
 
     cleanup_semaphores(args);
+    // exit(0);
     return 0;
 }
