@@ -22,6 +22,7 @@
 #include <semaphore.h>
 #include "proj2.h"
 
+// sem_t *mutex;
 sem_t *mutex_output;
 sem_t *boarding;
 sem_t *leaving;
@@ -31,7 +32,7 @@ int seed;
 int *count_in_bus;
 int *allskiers;
 
-BusStop busstop[11];
+BusStop busstop[11]; // 0 - final 1-10 - stops
 
 Arg ParseArgs(int argc, char *const argv[])
 {
@@ -123,11 +124,12 @@ void clear_and_open_output_file(void)
 
 void init_semaphores(Arg args)
 {
+    // init_sem(&mutex, 1);
     init_sem(&mutex_output, 1);
     init_sem(&boarding, 1);
     init_sem(&leaving, 1);
 
-    for (int i = 1; i <= args.Z; i++)
+    for (int i = 0; i <= args.Z; i++)
     {
         init_sem(&busstop[i].semaphore, 0);
         busstop[i].count = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
@@ -198,11 +200,12 @@ void destroy_sem(sem_t **sem)
 
 void cleanup_semaphores(Arg args)
 {
+    // destroy_sem(&mutex);
     destroy_sem(&mutex_output);
     destroy_sem(&boarding);
     destroy_sem(&leaving);
 
-    for (int i = 1; i <= args.Z; i++)
+    for (int i = 0; i <= args.Z; i++)
     {
         destroy_sem(&busstop[i].semaphore);
         if (munmap(busstop[i].count, sizeof(int)) == -1)
@@ -276,19 +279,26 @@ void skibus(Arg args)
     for (int i = 1; i <= args.Z; i++)
     {
         usleep_random_in_range(0, args.TB);
-        // wait_sem(&boarding);
         output(BUS_ARRIVED_TO, NONE, i);
-        for (int s = 0; s < *busstop[i].count; s++)
+        post_sem(&busstop[i].semaphore);
+        if (*busstop[i].count > 0)
         {
-            post_sem(&busstop[i].semaphore);
+            post_sem(&leaving);
         }
+        wait_sem(&boarding);
+        wait_sem(&busstop[i].semaphore);
         output(BUS_LEAVING, NONE, i);
-        // post_sem(&boarding);
         if (i == args.Z)
         {
             usleep_random_in_range(0, args.TB);
             output(BUS_ARRIVED_TO_FINAL, NONE, NONE);
+            post_sem(&busstop[0].semaphore);
+            if (*count_in_bus > 0)
+            {
+                post_sem(&leaving);
+            }
             wait_sem(&leaving);
+            wait_sem(&busstop[0].semaphore);
             output(BUS_LEAVING_FINAL, NONE, NONE);
 
             for (int j = 1; j <= args.Z; j++)
@@ -310,29 +320,28 @@ void skier(Arg args, int id, int idz)
     output(L_STARTED, id, NONE);
     allskiers++;
     usleep_random_in_range(0, args.TL);
-
     output(L_ARRIVED_TO, id, idz);
     busstop[idz].count++;
     wait_sem(&busstop[idz].semaphore);
-
-    output(L_BOARDING, id, NONE);
     if (*count_in_bus < args.K)
     {
+        output(L_BOARDING, id, NONE);
         count_in_bus++;
         busstop[idz].count--;
+        if (busstop[idz].count == 0 || *count_in_bus == args.K)
+        {
+            post_sem(&boarding);
+        }
     }
-    if (busstop[idz].count == 0 || *count_in_bus == args.K)
-    {
-        post_sem(&busstop[idz].semaphore);
-    }
-
+    post_sem(&busstop[idz].semaphore);
+    wait_sem(&busstop[0].semaphore);
     output(L_GOING_TO_SKI, id, NONE);
     count_in_bus--;
     if (count_in_bus == 0)
     {
         post_sem(&leaving);
     }
-
+    post_sem(&busstop[0].semaphore);
     exit(0);
 }
 
