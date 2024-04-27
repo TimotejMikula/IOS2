@@ -1,0 +1,82 @@
+bus:
+start
+sleep random time
+wait sem aby neprichadzali ludia na zastavku
+bus arrived
+pustit ludi do busu
+wait sem posledny postne
+bus leaving
+post sem mozu prichadzat ludia na zastavku
+ak posledna zastavka tak
+    sleep random time
+    bus arrived to final
+    pustit ludi von z busu
+    bus leaving final
+    ak ludia na nejakej zastavke tak
+        i = 1
+bus finished
+end
+
+
+skier:
+start
+sleep random time
+wait sem zastavka
+skier arrived to bus stop
+wait sem na bus
+ak volne miesto v buse tak
+    skier entering bus
+    ak posledny skier tak
+        post sem posledny
+    wait sem na final stop
+    going to ski
+    end
+
+
+
+prosim len mi potvrd ze to je spravne:
+
+bus:
+output - start
+v loope prechadza zastavkami:
+    sleep random time
+    output  - bus arrived
+    ak na zastavke su ludia tak
+        post sem zastavka i
+    inak
+        wait sem odchod busu
+    output - bus leaving
+    ak posledna zastavka
+        sleep random time
+        output - bus arrived to final
+        post sem pustit ludi von z busu
+        wait sem odchod busu
+        output - bus leaving final
+        ak ludia na nejakej zastavke tak
+            i = 1
+        inak
+            output - bus finished
+            exit
+
+skier:
+output - start
+sleep random time
+output - skier arrived to bus stop
+bus stop count++
+wait sem na bus
+output - boarding
+countinbus++
+bus stop count--
+ak posledny na zastavke tak
+    post sem odchod busu
+inak
+    post sem zastavka
+wait sem na final stop
+output - going to ski
+countdeparted++
+countinbus--
+ak countinbus = 0 tak
+    post sem odchod busu
+inak
+    post sem finalstop
+exit
