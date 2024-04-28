@@ -6,7 +6,7 @@
  * problem)
  *
  * @author Timotej Mikula, xmikult00
- * @date 16.4.2024
+ * @date 28.4.2024
  */
 
 #ifndef PROJ2_H

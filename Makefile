@@ -1,3 +1,7 @@
+# Makefile for proj2
+# Author: Timotej Mikula, xmikult00
+# Date: 28.4.2024
+
 CC = gcc
 CFLAGS = -std=gnu99 -Wall -Wextra -Werror -pedantic -pthread -lrt
 LDFLAGS = -pthread -lrt
