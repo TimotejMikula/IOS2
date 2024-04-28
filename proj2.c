@@ -19,10 +19,10 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <signal.h>
 #include <semaphore.h>
 #include "proj2.h"
 
-// sem_t *multiplex;
 sem_t *mutex_output; // mutex for output
 sem_t *boarding;     // mutex for boarding
 sem_t *leaving;      // mutex for unboarding/skier leaves bus
@@ -33,6 +33,17 @@ int *count_in_bus;
 int *alldepartedskiers;
 
 BusStop busstop[11]; // 0 - final 1-10 - stops
+
+pid_t parent_pid;
+
+void kill_children(int sig)
+{
+    (void)sig;
+    if (getpid() == parent_pid)
+    {
+        kill(0, SIGKILL);
+    }
+}
 
 Arg ParseArgs(int argc, char *const argv[])
 {
@@ -129,7 +140,6 @@ void clear_and_open_output_file(void)
 
 void init_semaphores(Arg args)
 {
-    // init_sem(&multiplex, args.K);
     init_sem(&mutex_output, 1);
     init_sem(&boarding, 1);
     init_sem(&leaving, 0);
@@ -205,7 +215,6 @@ void destroy_sem(sem_t **sem)
 
 void cleanup_semaphores(Arg args)
 {
-    // destroy_sem(&multiplex);
     destroy_sem(&mutex_output);
     destroy_sem(&boarding);
     destroy_sem(&leaving);
@@ -281,12 +290,10 @@ void output(int action_type, int id, int busstop)
 void skibus(Arg args)
 {
     output(BUS_STARTED, NONE, NONE);
-    // int i = 1;
-    // while (i <= args.Z)
     for (int i = 1; i <= args.Z; i++)
     {
         usleep_random_in_range(0, args.TB);
-        // wait_sem(&boarding);
+        wait_sem(&boarding);
         output(BUS_ARRIVED_TO, NONE, i);
         if ((*busstop[i].count) > 0)
         {
@@ -294,12 +301,12 @@ void skibus(Arg args)
             wait_sem(&leaving);
         }
         output(BUS_LEAVING, NONE, i);
-        // post_sem(&boarding);
+        post_sem(&boarding);
         if (i == args.Z)
         {
             i = 0;
             usleep_random_in_range(0, args.TB);
-            // wait_sem(&boarding);
+            wait_sem(&boarding);
             output(BUS_ARRIVED_TO_FINAL, NONE, NONE);
             if ((*count_in_bus) > 0)
             {
@@ -307,16 +314,13 @@ void skibus(Arg args)
                 wait_sem(&leaving);
             }
             output(BUS_LEAVING_FINAL, NONE, NONE);
-            // post_sem(&boarding);
+            post_sem(&boarding);
             if (args.L == (*alldepartedskiers))
             {
                 output(BUS_FINISH, NONE, NONE);
                 exit(0);
             }
-            // output(BUS_FINISH, NONE, NONE);
-            // exit(0);
         }
-        // i++;
     }
 }
 
@@ -328,10 +332,8 @@ void skier(Arg args, int id, int idz)
     (*busstop[idz].count)++;
     wait_sem(&busstop[idz].semaphore);
     output(L_BOARDING, id, NONE);
-    // wait_sem(&boarding);
     (*count_in_bus)++;
     (*busstop[idz].count)--;
-    // post_sem(&boarding);
     if ((*busstop[idz].count == 0) || (*count_in_bus == args.K))
     {
         post_sem(&leaving);
@@ -342,10 +344,8 @@ void skier(Arg args, int id, int idz)
     }
     wait_sem(&busstop[0].semaphore);
     output(L_GOING_TO_SKI, id, NONE);
-    // wait_sem(&boarding);
     (*alldepartedskiers)++;
     (*count_in_bus)--;
-    // post_sem(&boarding);
     if (*count_in_bus == 0)
     {
         post_sem(&leaving);
@@ -366,9 +366,13 @@ int main(int argc, char **argv)
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
 
+    parent_pid = getpid();
+    signal(SIGUSR1, kill_children);
+
     pid_t skibus_id = fork();
     if (skibus_id < 0)
     {
+        kill(parent_pid, SIGUSR1);
         exit_error("Skibus fork error\n", 1);
     }
     if (skibus_id == 0)
@@ -381,6 +385,7 @@ int main(int argc, char **argv)
         pid_t skier_id = fork();
         if (skier_id < 0)
         {
+            kill(parent_pid, SIGUSR1);
             exit_error("Fork skier failed.\n", 1);
         }
         if (skier_id == 0)
